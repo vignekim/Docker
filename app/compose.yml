@@ -1,0 +1,106 @@
+services:
+
+  mariadb:
+      image: mariadb:latest
+      container_name: mariadb
+      restart: always
+      networks:
+        docker-net:
+          ipv4_address: 192.168.100.1
+      ports:
+        - 23306:3306
+      volumes:
+        - /Users/Shared/data/mariadb/conf.d:/etc/mysql/conf.d
+        - /Users/Shared/data/mariadb/data:/var/lib/mysql
+        #- /Users/Shared/data/mariadb/initdb.d:/docker-entrypoint-initdb.d
+      environment:
+        - MYSQL_HOST=localhost
+        - MYSQL_PORT=3306
+        - MYSQL_ROOT_PASSWORD=1234
+        - MYSQL_DATABASE=edu
+        - MYSQL_USER=folder
+        - MYSQL_PASSWORD=1234
+        - TZ=Asia/Seoul
+
+  httpd:
+      build: 
+        context: .
+      container_name: httpd
+      depends_on:
+        - tomcat1
+        - tomcat2
+      restart: always
+      networks:
+        docker-net:
+          ipv4_address: 192.168.100.2
+      ports:
+        - 80:80
+      volumes:
+        - /Users/bean/IDE/www:/var/www/html:ro
+
+  tomcat1:
+      #build: 
+        #context: tomcat
+      image: tomcat:latest
+      container_name: tomcat1
+      depends_on:
+        - mariadb
+      restart: always
+      networks:
+        docker-net:
+          ipv4_address: 192.168.100.3
+      #ports:
+      #  - 8181:8080
+      volumes:
+        - /Users/bean/IDE/tomcat/webapps1:/usr/local/tomcat/webapps
+        - /Users/bean/IDE/tomcat/logs:/usr/local/tomcat/logs
+        - /Users/bean/IDE/tomcat/conf:/usr/local/tomcat/conf:ro
+        - /Users/bean/IDE/tomcat/lib:/usr/local/tomcat/lib:ro
+      links:
+        - mariadb
+
+  tomcat2:
+      #build: 
+        #context: tomcat
+      image: tomcat:latest
+      container_name: tomcat2
+      depends_on:
+        - mariadb
+      restart: always
+      networks:
+        docker-net:
+          ipv4_address: 192.168.100.4
+      #ports:
+      #  - 8282:8080
+      volumes:
+        - /Users/bean/IDE/tomcat/webapps2:/usr/local/tomcat/webapps
+        - /Users/bean/IDE/tomcat/logs:/usr/local/tomcat/logs
+        - /Users/bean/IDE/tomcat/conf:/usr/local/tomcat/conf:ro
+        - /Users/bean/IDE/tomcat/lib:/usr/local/tomcat/lib:ro
+      links:
+        - mariadb
+
+  spring:
+      #build: 
+        #context: spring
+      image: openjdk:latest
+      container_name: spring
+      depends_on:
+        - mariadb
+      restart: always
+      networks:
+        docker-net:
+          ipv4_address: 192.168.100.5
+      #ports:
+      #  - 8383:8080
+      volumes:
+        - /Users/bean/IDE/jar:/usr/local
+      links:
+        - mariadb
+      command: java -jar /usr/local/Folder.jar
+
+networks:
+  docker-net: 
+    external: 
+      name: mynet
+# docker network create --driver bridge --subnet 192.168.100.0/24 --gateway 192.168.100.254 mynet

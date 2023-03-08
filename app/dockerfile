@@ -1,0 +1,18 @@
+FROM centos:7
+
+WORKDIR /worker
+RUN yum -y update && yum install -y httpd httpd-devel gcc gcc-c++ make \
+    && yum install -y wget \
+    && wget https://dlcdn.apache.org/tomcat/tomcat-connectors/jk/tomcat-connectors-1.2.48-src.tar.gz \
+    && tar zxvf tomcat-connectors-1.2.48-src.tar.gz
+WORKDIR /worker/tomcat-connectors-1.2.48-src/native/
+RUN ./configure --with-apxs=/bin/apxs \
+    && make && make install 
+
+WORKDIR /etc/httpd/conf.d
+COPY ["vhost.conf","."]
+COPY ["mod_jk.conf","."]
+COPY ["workers.properties","."]
+
+EXPOSE 80
+CMD ["/usr/sbin/httpd", "-D", "FOREGROUND"]
